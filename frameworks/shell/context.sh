@@ -67,6 +67,7 @@ function context::_convert_user_path_to_jq_path() {
   # loop2 — quote keys with symbol "-", i.e. 'myModule.internal.address-pool' -> 'myModule.internal."address-pool"'
   # loop3 — convert array addresation from myArray.0 to myArray[0]
   # loop4 — return original dots from ##DOT##, i.e. aaa."bb##DOT##bb".cc -> aa."bb.bb".cc
+  # loop5 - return empty if root element
 
   jqPath=".$(sed -E \
     -e s/\'/\"/g \
@@ -74,6 +75,7 @@ function context::_convert_user_path_to_jq_path() {
     -e ':loop2' -e 's/(^|\.)([^."]*-[^."]*)(\.|$)/\1"\2"\3/g' -e 't loop2' \
     -e ':loop3' -e 's/(^|\.)([0-9]+)(\.|$)/[\2]\3/g' -e 't loop3' \
     -e ':loop4' -e 's/(^|\.)"([^"]+)##DOT##([^"]+)"(\.|$)/\1"\2.\3"\4/g' -e 't loop4' \
+    -e ':loop5' -e 's/^([0-9a-zA-Z]+)$//g' -e 't loop5' \
     <<< "${1:-}"
   )"
   echo "${jqPath}"
