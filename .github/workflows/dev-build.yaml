@@ -51,12 +51,24 @@ jobs:
       fail-fast: false
       matrix:
         flavour:
-          - ubuntu
+          #- ubuntu
           - alpine
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.label.id == 1838515600 # ':robot: build dev images' label
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+
+      - name: Builder instance name
+        run: echo ${{ steps.buildx.outputs.name }}
+
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Prepare environment
         env:
@@ -79,12 +91,25 @@ jobs:
           echo ::set-env name=dockerFile::${dockerFile}
           echo ::set-env name=appVersion::${appVersion}
 
-      - name: Build '${{ matrix.flavour }}' image
+      - name: Login to docker hub
+        run: |
+          echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+
+      - name: Build and push '${{ matrix.flavour }}' image
         run: |
           echo Build $imageTag with version $appVersion using ./$dockerFile
-          docker build --build-arg appVersion=$appVersion -t $imageTag -f $dockerFile .
+          docker buildx build --push \
+              --platform linux/amd64,linux/arm/v7,linux/arm64 \
+              --build-arg appVersion=$appVersion \
+              --tag $imageTag \
+              --file $dockerFile .
 
-      - name: Push '${{ matrix.flavour }}' image
-        run: |
-          docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASS }}
-          docker push $imageTag
+#      - name: Build '${{ matrix.flavour }}' image
+#        run: |
+#          echo Build $imageTag with version $appVersion using ./$dockerFile
+#          docker build --build-arg appVersion=$appVersion -t $imageTag -f $dockerFile .
+#
+#      - name: Push '${{ matrix.flavour }}' image
+#        run: |
+#          docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASS }}
+#          docker push $imageTag
