@@ -54,7 +54,8 @@ ADD shell_lib.sh /
 COPY --from=shell-operator /src/shell-operator /
 RUN chown -R kubesphere:kubesphere /shell-operator \
     && chown -R kubesphere:kubesphere /hooks \
-    && chown -R kubesphere:kubesphere /kubesphere
+    && chown -R kubesphere:kubesphere /kubesphere \
+    && chown -R kubesphere:kubesphere /var/run
 USER kubesphere
 RUN helm plugin install https://github.com/helm/helm-2to3.git
 WORKDIR /
